@@ -1,3 +1,4 @@
+
 name: Build StreamVault APK
 
 on:
@@ -42,12 +43,14 @@ jobs:
         run: |
           unzip -q StreamVault-v4-real-downloader-project.zip -d extracted
 
-      - name: Fix Java and Kotlin targets
+      - name: Fix Java, Kotlin and progress types
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          p = Path("extracted/StreamVault-v4/app/build.gradle.kts")
+          root = Path("extracted/StreamVault-v4")
+
+          p = root / "app/build.gradle.kts"
           s = p.read_text()
 
           s = s.replace(
@@ -73,7 +76,18 @@ jobs:
           )
 
           p.write_text(s)
-          print(p.read_text())
+
+          p = root / "app/src/main/java/com/streamvault/MainActivity.kt"
+          s = p.read_text()
+
+          old = "progress.progress = percent.coerceIn(0, 100)"
+          new = "progress.progress = percent.toInt().coerceIn(0, 100)"
+
+          if old not in s:
+              raise Exception("Could not find the progress percentage line")
+
+          p.write_text(s.replace(old, new, 1))
+          print("Both fixes applied successfully.")
           PY
 
       - name: Build APK
