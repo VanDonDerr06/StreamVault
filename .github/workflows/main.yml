@@ -42,6 +42,40 @@ jobs:
         run: |
           unzip -q StreamVault-v4-real-downloader-project.zip -d extracted
 
+      - name: Fix Java and Kotlin targets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("extracted/StreamVault-v4/app/build.gradle.kts")
+          s = p.read_text()
+
+          s = s.replace(
+              "android {\n",
+              """android {
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+          """,
+              1
+          )
+
+          s = s.replace(
+              "    }\n}\ndependencies {",
+              """    }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+          }
+          dependencies {""",
+              1
+          )
+
+          p.write_text(s)
+          print(p.read_text())
+          PY
+
       - name: Build APK
         run: |
           cd extracted/StreamVault-v4
